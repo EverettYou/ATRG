@@ -1007,6 +1007,7 @@ SUBROUTINE HOSVD(TEN, US, LEGS0, DCUTS)
 	! estimate size of work space, note that RD >= LD
 	LWORK = MAX(2*LD+RD,MIN(LD*(LD+65),2*LD+32*SUM(TEN%DIMS)))
 	LRWORK = 5*LD
+	SVD_ERR = 0. ! clear error record
 	! allocate for work space
 	ALLOCATE(S(LD), U(LD,LD), VT(LD,RD), WORK(LWORK), RWORK(LRWORK))
 	DO ILEG = 1, NLEG ! loop over all 
@@ -1022,8 +1023,11 @@ SUBROUTINE HOSVD(TEN, US, LEGS0, DCUTS)
 		! now transformation matrix is stored in U(:M,:L)
 		! organize U matrix into a tensor and record
 		US(ILEG) = MAT2TEN(U(:M,:L),[M,L],[1])
+		! record relative error
+		SVD_ERR = SVD_ERR + (1.-SUM(S(:L))/SUM(S(:MIN(M,N))))
 	END DO
 	DEALLOCATE(A, S, U, VT, WORK, RWORK) ! make room for TEN construction
+	SVD_ERR = SVD_ERR/NLEG ! cal average relative error
 	! now U for all legs are obtained in US in the form of 2-tensor
 	! perform Tucker product to get the core tensor
 	! A_{i} * {U^*_ij} = S_{j}
